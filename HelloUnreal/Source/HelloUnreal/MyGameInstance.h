@@ -13,7 +13,13 @@ UCLASS()
 class HELLOUNREAL_API UMyGameInstance : public UGameInstance
 {
 	GENERATED_BODY()
+
 public:
+	UMyGameInstance();
+
 	virtual void Init() override;
 	
+private:
+	UPROPERTY()
+	FString SchoolName;
 };

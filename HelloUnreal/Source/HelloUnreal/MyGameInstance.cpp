@@ -1,7 +1,15 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "MyGameInstance.h"
+#include "Student.h"
+#include "Teacher.h"
+
+UMyGameInstance::UMyGameInstance()
+{
+	// 언리얼 오브젝트의 초기화. 
+	// 이 정보는 CDO 라는 템플릿에 저장이 된다.
+	SchoolName = TEXT("핵교");
+}
 
 void UMyGameInstance::Init()
 {
@@ -13,6 +21,12 @@ void UMyGameInstance::Init()
 
 	// 언리얼 로그 남기는 법
 	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("Hello Unreal"));
+
+	/*
+	출력: 
+		LogTemp: Hello Unreal
+	*/
+
 
 	/*
 	* Unreal String
@@ -74,4 +88,103 @@ void UMyGameInstance::Init()
 		FName SearchInNamePool = FName(TEXT("level")); // 이 경우보다
 		const static FName StaticOnlyOnce(TEXT("level")); // 이와 같이 처리하는 게 나음
 	}
+
+	/*
+	출력:
+		LogTemp: Hey Unreal
+		LogTemp: Hey Unreal
+		LogTemp: Find Test: Unreal
+		LogTemp: Split Test: Hey / Unreal
+		LogTemp: Int: 32, Float: 3.141592
+		LogTemp: Int: 32, Float: 3.141592
+		LogTemp: FName 비교 결과: 같음
+	*/
+
+
+	/*
+	* 언리얼 오브젝트 리플렉션 I
+	*/
+
+	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
+
+	// 클래스 정보 가져오기
+	UClass* ClassRuntime = GetClass();
+	UClass* ClassCompile = UMyGameInstance::StaticClass();
+
+	// 검증 코드
+	//check(ClassRuntime == ClassCompile); // assertion 이 발생하지 않으면 두 객체는 동일한 클래스를 가르킨다는 뜻.
+	//ensure(ClassRuntime == ClassCompile);
+	//ensureMsgf(ClassRuntime == ClassCompile, TEXT("두 객체는 같지 않다"));
+
+	UE_LOG(LogTemp, Log, TEXT("학교를 담당하는 클래스 이름: %s"), *ClassRuntime->GetName());
+
+	// 언리얼 오브젝트의 맴버 값
+	SchoolName = TEXT("핵?교"); // 생성자에(CDO에) 저장된 값과 별개로 저장
+	UE_LOG(LogTemp, Log, TEXT("학교 이름: %s"), *SchoolName);
+	UE_LOG(LogTemp, Log, TEXT("학교 이름 기본값: %s"), *GetClass()->GetDefaultObject<UMyGameInstance>()->SchoolName);
+
+	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
+
+	/*
+	출력:
+		LogTemp: =============================================
+		LogTemp: 학교를 담당하는 클래스 이름: MyGameInstance
+		LogTemp: 학교 이름: 핵?교
+		LogTemp: 학교 이름 기본값: 핵교
+		LogTemp: =============================================
+	*/
+
+	/*
+	* 언리얼 오브젝트 리플렉션 II
+	*/
+
+	// 언리얼 오브젝트 생성
+	UStudent* Student = NewObject<UStudent>();
+	UTeacher* Teacher = NewObject<UTeacher>();
+
+	// 언리얼 오브젝트 초기화
+	Student->SetName(TEXT("김핵생"));
+	UE_LOG(LogTemp, Log, TEXT("학생의 새 이름: %s"), *Student->GetName());
+
+	// 언리얼 리플렉션을 이용한 데이터 접근
+	FString CurrentTeacherName;
+	FString NewTeacherName(TEXT("박슨생"));
+	FProperty* NameProp = UTeacher::StaticClass()->FindPropertyByName(TEXT("Name"));
+	if (NameProp)
+	{
+		// 데이터 가져오기
+		NameProp->GetValue_InContainer(Teacher, &CurrentTeacherName);
+		UE_LOG(LogTemp, Log, TEXT("선생님의 현재 이름: %s"), *CurrentTeacherName);
+
+		// 데이터 쓰기
+		NameProp->SetValue_InContainer(Teacher, &NewTeacherName);
+		UE_LOG(LogTemp, Log, TEXT("선생님의 새 이름: %s"), *Teacher->GetName());
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
+
+	// 일반적인 맴버 함수 호출
+	Student->DoLesson();
+
+	//리플렉션을 이용한 맴버 함수 호출
+	UFunction* DoLessonFunc = Teacher->GetClass()->FindFunctionByName(TEXT("DoLesson"));
+	if (DoLessonFunc)
+	{
+		Teacher->ProcessEvent(DoLessonFunc, nullptr /* 함수에 전달할 매개변수*/);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
+
+	/*
+	출력:
+		LogTemp: 학생의 새 이름: 김핵생
+		LogTemp: 선생님의 현재 이름: 김선생
+		LogTemp: 선생님의 새 이름: 박슨생
+		LogTemp: =============================================
+		LogTemp: 김핵생님이 수업에 참여합니다.
+		LogTemp: 1학년 1번 김핵생 님이 수업을 듣습니다.
+		LogTemp: 박슨생님이 수업에 참여합니다.
+		LogTemp: 3년차 선생님 박슨생 님이 수업을 듣습니다.
+		LogTemp: =============================================
+	*/
 }
