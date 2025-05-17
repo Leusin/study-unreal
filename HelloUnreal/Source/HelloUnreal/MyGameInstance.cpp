@@ -5,6 +5,7 @@
 #include "Teacher.h"
 #include "Steff.h"
 #include "Card.h"
+#include "CourseInfo.h"
 
 UMyGameInstance::UMyGameInstance()
 {
@@ -28,6 +29,9 @@ void UMyGameInstance::Init()
 	출력:
 		LogTemp: Hello Unreal
 	*/
+
+
+	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
 
 
 	/*
@@ -102,12 +106,11 @@ void UMyGameInstance::Init()
 		LogTemp: FName 비교 결과: 같음
 	*/
 
+	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
 
 	/*
 	* 언리얼 오브젝트 리플렉션 I
 	*/
-
-	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
 
 	// 클래스 정보 가져오기
 	UClass* ClassRuntime = GetClass();
@@ -125,16 +128,17 @@ void UMyGameInstance::Init()
 	UE_LOG(LogTemp, Log, TEXT("학교 이름: %s"), *SchoolName);
 	UE_LOG(LogTemp, Log, TEXT("학교 이름 기본값: %s"), *GetClass()->GetDefaultObject<UMyGameInstance>()->SchoolName);
 
-	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
 
 	/*
 	출력:
-		LogTemp: =============================================
 		LogTemp: 학교를 담당하는 클래스 이름: MyGameInstance
 		LogTemp: 학교 이름: 핵?교
 		LogTemp: 학교 이름 기본값: 핵교
-		LogTemp: =============================================
 	*/
+
+
+	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
+
 
 	/*
 	* 언리얼 오브젝트 리플렉션 II
@@ -176,8 +180,6 @@ void UMyGameInstance::Init()
 		Teacher->ProcessEvent(DoLessonFunc, nullptr /* 함수에 전달할 매개변수*/);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
-
 	/*
 	출력:
 		LogTemp: 학생의 새 이름: 김핵생
@@ -185,8 +187,11 @@ void UMyGameInstance::Init()
 		LogTemp: 선생님의 새 이름: 박슨생
 		LogTemp: =============================================
 		LogTemp: 1학년 1번 김핵생 님이 수업을 듣습니다.
-		LogTemp: =============================================
 	*/
+
+
+	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
+
 
 	/**
 	* 인터페이스
@@ -218,8 +223,6 @@ void UMyGameInstance::Init()
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
-
 	/*
 	출력:
 		LogTemp: 구성원 이름: 김학생
@@ -231,8 +234,10 @@ void UMyGameInstance::Init()
 		LogTemp: 김선생님은 수업에 참여할 수 있습니다.
 		LogTemp: 3년차 선생님 김선생 님이 수업을 진행합니다.
 		LogTemp: 김직원님은 수업에 참여할 수 없습니다.
-		LogTemp: =============================================
 	*/
+
+
+	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
 
 
 	/**
@@ -255,13 +260,43 @@ void UMyGameInstance::Init()
 
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
-
 	/*
 	출력:
 		LogTemp: 김학생 님이 소유한 카드의 종류: 1 (For Student)
 		LogTemp: 김선생 님이 소유한 카드의 종류: 2 (For Teacher)
 		LogTemp: 김직원 님이 소유한 카드의 종류: 3 (For Staff)
-		LogTemp: =============================================
 	*/
+	
+
+	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
+
+
+	/**
+	* 언리얼 델리게이트
+	*/	
+	CourseInfo = NewObject<UCourseInfo>(this); // 컴포지션 객체를 NewObject 로 생성할때 매개변수에 Outher(MyGameInstance) 를 지정해야함
+
+	UStudent* Student1 = NewObject<UStudent>();
+	Student1->SetName(TEXT("일학생"));
+	UStudent* Student2 = NewObject<UStudent>();
+	Student2->SetName(TEXT("이학생"));
+	UStudent* Student3 = NewObject<UStudent>();
+	Student3->SetName(TEXT("삼학생"));
+
+	CourseInfo->OnChanged.AddUObject(Student1, &UStudent::GetNotification);
+	CourseInfo->OnChanged.AddUObject(Student2, &UStudent::GetNotification);
+	CourseInfo->OnChanged.AddUObject(Student3, &UStudent::GetNotification);
+
+	CourseInfo->ChangeCourseInfo(SchoolName, TEXT("변경된 학사 정보"));
+
+	/*
+	출력:
+		LogTemp: [CourseInfo] 학사 정보가 변경되어 알림을 발송합니다.
+		LogTemp: [Student] 삼학생 님이 핵?교 로부터 받은 메시지 : 변경된 학사 정보
+		LogTemp: [Student] 이학생 님이 핵?교 로부터 받은 메시지 : 변경된 학사 정보
+		LogTemp: [Student] 일학생 님이 핵?교 로부터 받은 메시지 : 변경된 학사 정보
+	*/
+
+
+	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
 }

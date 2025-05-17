@@ -21,6 +21,8 @@ public:
 
 	virtual void DoLesson() override;
 
+	void GetNotification(const FString& School, const FString& NewCourseInfo);
+
 protected:
 
 
