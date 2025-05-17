@@ -3,6 +3,8 @@
 #include "MyGameInstance.h"
 #include "Student.h"
 #include "Teacher.h"
+#include "Steff.h"
+#include "Card.h"
 
 UMyGameInstance::UMyGameInstance()
 {
@@ -23,7 +25,7 @@ void UMyGameInstance::Init()
 	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("Hello Unreal"));
 
 	/*
-	출력: 
+	출력:
 		LogTemp: Hello Unreal
 	*/
 
@@ -166,7 +168,8 @@ void UMyGameInstance::Init()
 	// 일반적인 맴버 함수 호출
 	Student->DoLesson();
 
-	//리플렉션을 이용한 맴버 함수 호출
+	// 리플렉션을 이용한 맴버 함수 호출
+	// (현재는 UFUNCTION()로 관리되는 함수라서 호출되지 않는다)
 	UFunction* DoLessonFunc = Teacher->GetClass()->FindFunctionByName(TEXT("DoLesson"));
 	if (DoLessonFunc)
 	{
@@ -181,10 +184,84 @@ void UMyGameInstance::Init()
 		LogTemp: 선생님의 현재 이름: 김선생
 		LogTemp: 선생님의 새 이름: 박슨생
 		LogTemp: =============================================
-		LogTemp: 김핵생님이 수업에 참여합니다.
 		LogTemp: 1학년 1번 김핵생 님이 수업을 듣습니다.
-		LogTemp: 박슨생님이 수업에 참여합니다.
-		LogTemp: 3년차 선생님 박슨생 님이 수업을 듣습니다.
+		LogTemp: =============================================
+	*/
+
+	/**
+	* 인터페이스
+	*/
+
+	TArray<UPerson*> Persons = { NewObject<UStudent>(), NewObject<UTeacher>(), NewObject<USteff>() };
+
+	// 다형적 동작
+	for (const UPerson* Person : Persons)
+	{
+		UE_LOG(LogTemp, Log, TEXT("구성원 이름: %s"), *Person->GetName());
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
+
+	// 인터페이스를 통해 구현한 매서드
+	// 캐스팅을 통해 다형적 동작
+	for (UPerson* Person : Persons)
+	{
+		IDoLesson* LessonInterface = Cast<IDoLesson>(Person);
+		if (LessonInterface)
+		{
+			UE_LOG(LogTemp, Log, TEXT("%s님은 수업에 참여할 수 있습니다."), *Person->GetName());
+			LessonInterface->DoLesson();
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("%s님은 수업에 참여할 수 없습니다."), *Person->GetName());
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
+
+	/*
+	출력:
+		LogTemp: 구성원 이름: 김학생
+		LogTemp: 구성원 이름: 김선생
+		LogTemp: 구성원 이름: 김직원
+		LogTemp: =============================================
+		LogTemp: 김학생님은 수업에 참여할 수 있습니다.
+		LogTemp: 1학년 1번 김학생 님이 수업을 듣습니다.
+		LogTemp: 김선생님은 수업에 참여할 수 있습니다.
+		LogTemp: 3년차 선생님 김선생 님이 수업을 진행합니다.
+		LogTemp: 김직원님은 수업에 참여할 수 없습니다.
+		LogTemp: =============================================
+	*/
+
+
+	/**
+	* 언리얼 컴포지션
+	*/
+	for (UPerson* Person : Persons)
+	{
+		// UPerson 객체가 가진 UCard 객체 정보 가져오기
+		const UCard* OwnCard = Person->GetCard();
+		check(OwnCard);
+		ECardType CardType = OwnCard->GetCardType();
+
+		// 열거형 ECardType 에 지정된 메타 정보 가져오기
+		const UEnum* CardEnumType = FindObject<UEnum>(nullptr, TEXT("/Script/HelloUnreal.ECardType"));
+		if (CardEnumType)
+		{
+			FString CardMetaData = CardEnumType->GetDisplayNameTextByValue((int64)CardType).ToString();
+			UE_LOG(LogTemp, Log, TEXT("%s 님이 소유한 카드의 종류: %d (%s)"), *Person->GetName(), CardType, *CardMetaData);
+		}
+
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
+
+	/*
+	출력:
+		LogTemp: 김학생 님이 소유한 카드의 종류: 1 (For Student)
+		LogTemp: 김선생 님이 소유한 카드의 종류: 2 (For Teacher)
+		LogTemp: 김직원 님이 소유한 카드의 종류: 3 (For Staff)
 		LogTemp: =============================================
 	*/
 }

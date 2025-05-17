@@ -5,13 +5,14 @@
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
 #include "Person.h"
+#include "DoLesson.h"
 #include "Teacher.generated.h"
 
 /**
  *
  */
 UCLASS()
-class HELLOUNREAL_API UTeacher : public UPerson
+class HELLOUNREAL_API UTeacher : public UPerson, public IDoLesson
 {
 	GENERATED_BODY()
 

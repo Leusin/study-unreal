@@ -7,7 +7,7 @@
 #include "Person.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class HELLOUNREAL_API UPerson : public UObject
@@ -17,11 +17,14 @@ class HELLOUNREAL_API UPerson : public UObject
 public:
 	UPerson();
 
-	UFUNCTION()
-	virtual void DoLesson();
+	//UFUNCTION()
+	//virtual void DoLesson();
 
-	const FString& GetName() const;
-	void SetName(const FString& InName);
+	FORCEINLINE const FString& GetName() const { return Name; }
+	FORCEINLINE  void SetName(const FString& InName) { Name = InName; }
+
+	FORCEINLINE const class UCard* GetCard() const { return Card; }
+	FORCEINLINE  void SetCard(class UCard* InCard) { Card = InCard; }
 
 protected:
 	UPROPERTY()
@@ -29,6 +32,10 @@ protected:
 
 	UPROPERTY()
 	int32 Year;
+
+	UPROPERTY()
+	//class UCard* Card; // 원시 포인터 타입 전방 선언
+	TObjectPtr<class UCard> Card; // 언리얼5엔 날 포인터 대신 이렇게 사용하는 것 권장
 
 private:
 
