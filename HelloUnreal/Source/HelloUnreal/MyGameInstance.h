@@ -4,7 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
+#include "StudentData.h"
 #include "MyGameInstance.generated.h"
+
 
 /**
  * 
@@ -25,4 +27,11 @@ private:
 
 	UPROPERTY()
 	FString SchoolName;
+
+	TArray<struct FStudentData> StudentsData;
+
+	UPROPERTY()
+	TArray<TObjectPtr<class UStudent>> Students;
+
+	TMap<int32, FString> StudentsMap;
 };

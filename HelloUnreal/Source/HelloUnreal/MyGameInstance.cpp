@@ -7,6 +7,7 @@
 #include "Card.h"
 #include "CourseInfo.h"
 
+
 UMyGameInstance::UMyGameInstance()
 {
 	// 언리얼 오브젝트의 초기화. 
@@ -299,4 +300,161 @@ void UMyGameInstance::Init()
 
 
 	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
+
+
+	/**
+	* 언리얼 컨테이너 TArray
+	*/
+
+	const int32 ArrayNum = 10;
+	TArray<int32> I32Array;
+
+	// 빈 컨테이너에 원소 추가(1, 2, 3 ... 8, 9, 10)
+	for (int32 i = 1; i <= ArrayNum; i++)
+	{
+		I32Array.Add(i);
+	}
+
+	// 원소 지우기 (1, 3, 5, 7, 9)
+	I32Array.RemoveAll(
+		[](int32 Val)
+		{
+			return Val % 2 == 0;
+		}
+	);
+
+	// 원소 추가하기 (1, 3, 5, 7, 9, 2, 4, 6, 8, 10)
+	I32Array += { 2, 4, 6, 8, 10 };
+
+	// 메모리 주소를 참고하여 값 넣기
+	TArray<int32> I32ArrayCompare;
+	int32 CArray[] = {1, 3, 5, 7, 9, 2, 4, 6, 8, 10};
+
+	I32ArrayCompare.AddUninitialized(ArrayNum);
+	FMemory::Memcpy(I32ArrayCompare.GetData(), CArray, sizeof(int32) * ArrayNum);
+
+	ensure(I32Array == I32ArrayCompare);
+
+	// 누적곱 구하기
+	int32 Sum = 0;
+	for (const int32& Elem : I32Array)
+	{
+		Sum += Elem;
+	}
+
+	int32 SumByAlgo = Algo::Accumulate(I32Array, 0);
+	ensure(Sum == SumByAlgo);
+
+	/**
+	* 언리얼 컨테이너 TSet
+	*/
+
+	TSet<int32> I32Set;
+
+	// 빈 컨테이너에 원소 추가(1, 2, 3 ... 8, 9, 10)
+	for (int32 i = 1; i < ArrayNum; i++)
+	{
+		I32Set.Add(i);
+	}
+
+	// 원소 지우기 (순서 상관 없이 1, 3, 5, 7, 9)
+	I32Set.Remove(2);
+	I32Set.Remove(4);
+	I32Set.Remove(6);
+	I32Set.Remove(8);
+	I32Set.Remove(10);
+
+	// 원소 추가하기 (순서 상관 없이 1, 3, 5, 7, 9, 2, 4, 6, 8, 10)
+	I32Set.Add(2);
+	I32Set.Add(4);
+	I32Set.Add(6);
+	I32Set.Add(8);
+	I32Set.Add(10);
+
+
+	/**
+	* 언리얼 구조체
+	*/
+	const int32 StudentNum = 300;
+	for (int32 i = 0; i < StudentNum; i++)
+	{
+		StudentsData.Emplace(FStudentData(MakeRandomName(), i));
+	}
+
+	TArray<FString> AllStudentsName;
+	Algo::Transform(StudentsData, AllStudentsName,
+		[](const FStudentData& Val)
+		{
+			return Val.Name;
+		}
+	);
+
+	UE_LOG(LogTemp, Log, TEXT("모든 학생 이름의 수 : %d"), AllStudentsName.Num());
+
+	TSet<FString> AllUniqueNames;
+	Algo::Transform(StudentsData, AllUniqueNames,
+		[](const FStudentData& Val)
+		{
+			return Val.Name;
+		}
+	);
+
+	UE_LOG(LogTemp, Log, TEXT("중복 없는 학생 이름의 수 : %d"), AllUniqueNames.Num());
+
+	/*
+	출력:
+		LogTemp: 모든 학생 이름의 수 : 300
+		LogTemp: 중복 없는 학생 이름의 수 : 64
+	*/
+
+
+	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
+
+
+	/**
+	* 언리얼 컨테이너 TMap
+	*/
+
+	Algo::Transform(StudentsData, StudentsMap,
+		[](const FStudentData& Val)
+		{
+			return TPair<int32, FString>(Val.Order, Val.Name);
+		}
+	);
+
+	UE_LOG(LogTemp, Log, TEXT("순번에 따른 학생 맵의 레코드 수 : %d"), StudentsMap.Num());
+
+	TMap<FString, int32> StudentsMapByUniqueName;
+
+	Algo::Transform(StudentsData, StudentsMapByUniqueName,
+		[](const FStudentData& Val)
+		{
+			return TPair<FString, int32>(Val.Name, Val.Order);
+		}
+	);
+
+	UE_LOG(LogTemp, Log, TEXT("이름에 따른 학생 맵의 레코드 수 : %d"), StudentsMapByUniqueName.Num());
+
+	TMultiMap<FString, int32> StudentsMultiMapByUniqueName;
+
+	Algo::Transform(StudentsData, StudentsMultiMapByUniqueName,
+		[](const FStudentData& Val)
+		{
+			return TPair<FString, int32>(Val.Name, Val.Order);
+		}
+	);
+
+	UE_LOG(LogTemp, Log, TEXT("이름에 따른 학생 멀티맵의 레코드 수 : %d"), StudentsMultiMapByUniqueName.Num());
+
+	const FString TargetName(TEXT("이혜은"));
+	TArray<int32> AllOrders;
+	StudentsMultiMapByUniqueName.MultiFind(TargetName, AllOrders);
+
+	UE_LOG(LogTemp, Log, TEXT("이름이 \"%s\"인 학생 수 : % d"), *TargetName, AllOrders.Num());
+
+	TSet<FStudentData> StudentSet;
+	for (int32 i = 0; i <= StudentNum; i++)
+	{
+		StudentSet.Emplace(FStudentData(MakeRandomName(), i));
+	}
 }
