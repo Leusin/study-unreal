@@ -6,6 +6,7 @@
 #include "Steff.h"
 #include "Card.h"
 #include "CourseInfo.h"
+#include "StudentManager.h"
 
 
 UMyGameInstance::UMyGameInstance()
@@ -456,5 +457,106 @@ void UMyGameInstance::Init()
 	for (int32 i = 0; i <= StudentNum; i++)
 	{
 		StudentSet.Emplace(FStudentData(MakeRandomName(), i));
+	}
+
+
+	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
+
+
+	/**
+	* 언리얼 메모리 관리
+	*/
+
+	// UPROPERTY 참조 언리얼 오브젝트
+	PropStudent = NewObject<UStudent>();
+	PropStudents.Add(NewObject<UStudent>());
+
+	// UPROPERTY 참조가 아닌 언리얼 오브젝트
+	NonPropStudent = NewObject<UStudent>();
+	NonPropStudents.Add(NewObject<UStudent>());
+
+	StudentManager = new FStudentManager(NewObject<UStudent>());
+
+	/* 실습 결과는 Shutdown() 에서 */
+}
+
+void UMyGameInstance::Shutdown()
+{
+	Super::Shutdown();
+
+	CheckUObjectIsVaild(NonPropStudent, TEXT("NonPropStudent"));
+	CheckUObjectIsNull(NonPropStudent, TEXT("NonPropStudent"));
+
+	CheckUObjectIsVaild(PropStudent, TEXT("PropStudent"));
+	CheckUObjectIsNull(PropStudent, TEXT("PropStudent"));
+
+	/*
+	GC가 동작한 이후 프로그램이 마칠 때 출력:
+		LogTemp: [NonPropStudent] 유효하지 않은 언리얼 오브젝트
+		LogTemp: [NonPropStudent] 널 포인터가 아닌 언리얼 오브젝트
+		LogTemp: [PropStudent] 유효한 언리얼 오브젝트
+		LogTemp: [PropStudent] 널 포인터가 아닌 언리얼 오브젝트
+	*/
+
+	// 관리되지 않는 오브젝트(NonProp)는 유효하지 않음에도 널포인터가 아님(댕글링 포인터 상태임)을 확인 할 수 있다.
+
+	CheckUObjectIsVaild(NonPropStudents[0], TEXT("NonPropStudents"));
+	CheckUObjectIsNull(NonPropStudents[0], TEXT("NonPropStudents"));
+
+	CheckUObjectIsVaild(PropStudents[0], TEXT("PropStudents"));
+	CheckUObjectIsNull(PropStudents[0], TEXT("PropStudents"));
+
+	/*
+	GC가 동작한 이후 프로그램이 마칠 때 출력:
+		LogTemp: [NonPropStudents] 유효하지 않은 언리얼 오브젝트
+		LogTemp: [NonPropStudents] 널 포인터가 아닌 언리얼 오브젝트
+		LogTemp: [PropStudents] 유효한 언리얼 오브젝트
+		LogTemp: [PropStudents] 널 포인터가 아닌 언리얼 오브젝트
+	*/
+
+	const UObject* StudentInManager = StudentManager->GetStudent();
+
+	delete StudentManager;
+	StudentManager = nullptr;
+
+	CheckUObjectIsVaild(StudentInManager, TEXT("StudentInManager"));
+	CheckUObjectIsNull(StudentInManager, TEXT("StudentInManager"));
+
+	/*
+	FStudentManager 가 FGCObject 를 상속 받지 않고,
+	GC가 동작한 이후 프로그램이 마칠 때 출력:
+		LogTemp: [StudentInManager] 유효하지 않은 언리얼 오브젝트
+		LogTemp: [StudentInManager] 널 포인터가 아닌 언리얼 오브젝트
+
+	FStudentManager 가 FGCObject 를 상속 받고,
+	GC가 동작한 이후 프로그램이 마칠 때 출력:
+		LogTemp: [StudentInManager] 유효한 언리얼 오브젝트
+		LogTemp: [StudentInManager] 널 포인터가 아닌 언리얼 오브젝트
+	*/
+
+	// C++ 클래스가 FGCObject 를 상속 받지 않고 언리얼 오브젝트를 관리할때 메모리가 관리되지 않아 댕글링 포인터 문제 발생
+}
+
+void CheckUObjectIsVaild(const UObject* InObject, const FString& InTag)
+{
+	if (InObject->IsValidLowLevel())
+	{
+		UE_LOG(LogTemp, Log, TEXT("[%s] 유효한 언리얼 오브젝트"), *InTag);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("[%s] 유효하지 않은 언리얼 오브젝트"), *InTag);
+	}
+}
+
+void CheckUObjectIsNull(const UObject* InObject, const FString& InTag)
+{
+	if (InObject == nullptr)
+	{
+		UE_LOG(LogTemp, Log, TEXT("[%s] 널 포인터 언리얼 오브젝트"), *InTag);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("[%s] 널 포인터가 아닌 언리얼 오브젝트"), *InTag);
 	}
 }

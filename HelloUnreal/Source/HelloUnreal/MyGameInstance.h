@@ -20,6 +20,8 @@ public:
 	UMyGameInstance();
 
 	virtual void Init() override;
+
+	virtual void Shutdown() override;
 	
 private:
 	UPROPERTY()
@@ -34,4 +36,20 @@ private:
 	TArray<TObjectPtr<class UStudent>> Students;
 
 	TMap<int32, FString> StudentsMap;
+
+	UPROPERTY()
+	TObjectPtr<class UStudent> PropStudent;
+
+	UPROPERTY()
+	TArray<TObjectPtr<class UStudent>> PropStudents;
+
+	TObjectPtr<class UStudent> NonPropStudent;
+
+	TArray<TObjectPtr<class UStudent>> NonPropStudents;
+
+	class FStudentManager* StudentManager = nullptr;
 };
+
+void CheckUObjectIsVaild(const UObject* InObject, const FString& InTag);
+
+void CheckUObjectIsNull(const UObject* InObject, const FString& InTag);
