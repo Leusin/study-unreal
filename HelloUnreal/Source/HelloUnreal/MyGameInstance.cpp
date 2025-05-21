@@ -7,6 +7,8 @@
 #include "Card.h"
 #include "CourseInfo.h"
 #include "StudentManager.h"
+#include "Serialization/ObjectAndNameAsStringProxyArchive.h"
+#include "JsonObjectConverter.h"
 
 
 UMyGameInstance::UMyGameInstance()
@@ -268,14 +270,14 @@ void UMyGameInstance::Init()
 		LogTemp: 김선생 님이 소유한 카드의 종류: 2 (For Teacher)
 		LogTemp: 김직원 님이 소유한 카드의 종류: 3 (For Staff)
 	*/
-	
+
 
 	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
 
 
 	/**
 	* 언리얼 델리게이트
-	*/	
+	*/
 	CourseInfo = NewObject<UCourseInfo>(this); // 컴포지션 객체를 NewObject 로 생성할때 매개변수에 Outher(MyGameInstance) 를 지정해야함
 
 	UStudent* Student1 = NewObject<UStudent>();
@@ -329,7 +331,7 @@ void UMyGameInstance::Init()
 
 	// 메모리 주소를 참고하여 값 넣기
 	TArray<int32> I32ArrayCompare;
-	int32 CArray[] = {1, 3, 5, 7, 9, 2, 4, 6, 8, 10};
+	int32 CArray[] = { 1, 3, 5, 7, 9, 2, 4, 6, 8, 10 };
 
 	I32ArrayCompare.AddUninitialized(ArrayNum);
 	FMemory::Memcpy(I32ArrayCompare.GetData(), CArray, sizeof(int32) * ArrayNum);
@@ -477,11 +479,161 @@ void UMyGameInstance::Init()
 
 	StudentManager = new FStudentManager(NewObject<UStudent>());
 
-	/* 실습 결과는 Shutdown() 에서 */
+	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("결과는 프로그램을 마친 이후에"));
+
+	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
+
+
+	/**
+	 * 언리얼의 직렬화
+	 */
+
+	 //
+	 // FArchive와 << 연산자 직렬화
+	 //
+
+	  // 저장할 데이터
+	FStudentData RawDataSrc(TEXT("직렬화"), 13);
+
+	const FString SavedDir = FPaths::Combine(FPlatformMisc::ProjectDir(), TEXT("Saved"));
+	UE_LOG(LogTemp, Log, TEXT("저장할 파일 폴더: %s"), *SavedDir);
+
+	{
+		const FString RawDataFinleName(TEXT("RawData.bin"));
+		FString RawDataAbsolutePath = FPaths::Combine(*SavedDir, "RawDataFileName");
+		UE_LOG(LogTemp, Log, TEXT("저장할 파일 경로: %s"), *RawDataAbsolutePath);
+		FPaths::MakeStandardFilename(RawDataAbsolutePath);
+		UE_LOG(LogTemp, Log, TEXT("변경할 파일 경로: %s"), *RawDataAbsolutePath);
+
+		FArchive* RawFileWriterAr = IFileManager::Get().CreateFileWriter(*RawDataAbsolutePath);
+		if (nullptr != RawFileWriterAr)
+		{
+			// 데이터 쓰기(직렬화)
+			//*RawFileWriterAr << RawDataSrc.Order;
+			//*RawFileWriterAr << RawDataSrc.Name;
+			*RawFileWriterAr << RawDataSrc;
+			RawFileWriterAr->Close();
+			delete RawFileWriterAr;
+			RawFileWriterAr = nullptr;
+		}
+
+		// 복원할 데이터
+		FStudentData RawDataDest;
+		FArchive* RawFileReaderAr = IFileManager::Get().CreateFileReader(*RawDataAbsolutePath);
+		if (nullptr != RawFileReaderAr)
+		{
+			// 데이터 읽기(역직렬화)
+			*RawFileReaderAr << RawDataDest;
+			RawFileReaderAr->Close();
+			delete RawFileReaderAr;
+			RawFileReaderAr = nullptr;
+
+			UE_LOG(LogTemp, Log, TEXT("[RawData] 이름: %s, 순번: %d"), *RawDataDest.Name, RawDataDest.Order);
+		}
+
+
+	}
+
+	/*
+	출력:
+		LogTemp: 저장할 파일 폴더: ../../../../study-unreal/HelloUnreal/Saved
+		LogTemp: 저장할 파일 경로: ../../../../study-unreal/HelloUnreal/Saved/RawDataFileName
+		LogTemp: 변경할 파일 경로: C:/Users/home/Documents/GitHub/study-unreal/HelloUnreal/Saved/RawDataFileName
+		TogTemp: [RawData] 이름: 직렬화, 순번: 16
+	*/
+
+	//
+	// 다양한 아카이브 클래스(FMemoryReader, FMemoryWriter) 직렬화
+	// 
+
+	// 저장할 데이터
+	StudentSrc = NewObject<UStudent>();
+	StudentSrc->SetName(TEXT("화렬직"));
+	StudentSrc->SetOrder(31);
+
+	{
+		const FString ObjectDataFileName(TEXT("ObjectData.bin"));
+		FString ObjectDataAbsolutePath = FPaths::Combine(*SavedDir, *ObjectDataFileName);
+		FPaths::MakeStandardFilename(ObjectDataAbsolutePath);
+		
+		TArray<uint8> BufferArray;
+		FMemoryWriter MemoryWriter(BufferArray, true);
+		FObjectAndNameAsStringProxyArchive Ar(MemoryWriter, true);
+		Ar.ArIsSaveGame = true;
+		StudentSrc->Serialize(Ar);
+
+		if (TUniquePtr<FArchive> FileWriterAr = TUniquePtr<FArchive>(IFileManager::Get().CreateFileWriter(*ObjectDataAbsolutePath)))
+		{
+			*FileWriterAr << BufferArray;
+			FileWriterAr->Close();
+		}
+
+		TArray<uint8> BufferArrayFromFile;
+		if (TUniquePtr<FArchive> FileReaderAr = TUniquePtr<FArchive>(IFileManager::Get().CreateFileReader(*ObjectDataAbsolutePath)))
+		{
+			*FileReaderAr << BufferArrayFromFile;
+			FileReaderAr->Close();
+		}
+
+		FMemoryReader MemoryReader(BufferArrayFromFile, true);
+		FObjectAndNameAsStringProxyArchive ArReader(MemoryReader, false);
+		ArReader.ArIsSaveGame = true;
+		UStudent* StudentDest = NewObject<UStudent>();
+		StudentDest->Serialize(ArReader);
+
+
+		PrintStudentInfo(StudentDest, TEXT("ObjectData"));
+	}
+
+	/* 
+	출력:
+		LogTemp: [ObjectData] 이름: 화렬직, 순번: 31
+	*/
+
+	//
+	//  Json 직렬화
+	//
+	{
+		const FString JsonDataFileName(TEXT("StudentJsonData.text"));
+		FString JsonDataAbsolutePath = FPaths::Combine(*SavedDir, JsonDataFileName);
+		FPaths::MakeStandardFilename(JsonDataAbsolutePath);
+
+		TSharedRef<FJsonObject> JsonObjectSrc = MakeShared<FJsonObject>();
+		FJsonObjectConverter::UStructToJsonObject(StudentSrc->GetClass(), StudentSrc, JsonObjectSrc);
+
+		FString JsonOutString;
+		TSharedRef<TJsonWriter<TCHAR>> JsonWriterAr = TJsonWriterFactory<TCHAR>::Create(&JsonOutString);
+		if (FJsonSerializer::Serialize(JsonObjectSrc, JsonWriterAr))
+		{
+			FFileHelper::SaveStringToFile(JsonOutString, *JsonDataAbsolutePath);
+		}
+
+		FString JsonInString;
+		FFileHelper::LoadFileToString(JsonInString, *JsonDataAbsolutePath);
+
+		TSharedRef<TJsonReader<TCHAR>> JsonReaderAr = TJsonReaderFactory<TCHAR>::Create(JsonInString);
+
+		TSharedPtr<FJsonObject>JsonObjectDest;
+		if (FJsonSerializer::Deserialize(JsonReaderAr, JsonObjectDest))
+		{
+			UStudent* JsonStudentDest = NewObject<UStudent>();
+			if (FJsonObjectConverter::JsonObjectToUStruct(JsonObjectDest.ToSharedRef(), JsonStudentDest->GetClass(), JsonStudentDest))
+			{
+				PrintStudentInfo(JsonStudentDest, TEXT("JsonData"));
+			}
+		}
+	}
+
+	/*
+	출력:
+		LogTemp: [JsonData] 이름: 화렬직, 순번: 31
+	*/
 }
 
 void UMyGameInstance::Shutdown()
 {
+	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
+
 	Super::Shutdown();
 
 	CheckUObjectIsVaild(NonPropStudent, TEXT("NonPropStudent"));
@@ -559,4 +711,9 @@ void CheckUObjectIsNull(const UObject* InObject, const FString& InTag)
 	{
 		UE_LOG(LogTemp, Log, TEXT("[%s] 널 포인터가 아닌 언리얼 오브젝트"), *InTag);
 	}
+}
+
+void PrintStudentInfo(const UStudent* InStudent, const FString& InTag)
+{
+	UE_LOG(LogTemp, Log, TEXT("[%s] 이름: %s, 순번: %d"), *InTag, *InStudent->GetName(), InStudent->GetOrder());
 }

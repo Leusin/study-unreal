@@ -23,11 +23,26 @@ public:
 
 	void GetNotification(const FString& School, const FString& NewCourseInfo);
 
+	virtual void Serialize(FArchive& Ar) override;
+
+	FORCEINLINE void SetOrder(const int32& InOrder)
+	{
+		Order = InOrder;
+	}
+
+	FORCEINLINE const int32& GetOrder() const
+	{
+		return Order;
+	}
+
 protected:
 
 
 private:
 	UPROPERTY()
 	int32 Id;
+
+	UPROPERTY()
+	int32 Order;
 
 };

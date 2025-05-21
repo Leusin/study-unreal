@@ -30,6 +30,13 @@ struct FStudentData
 		return GetTypeHash(InStudentData.Order);
 	}
 
+	friend FArchive& operator<<(FArchive& Ar, FStudentData& InStudentData)
+	{
+		Ar << InStudentData.Order;
+		Ar << InStudentData.Name;
+		return Ar;
+	}
+
 	UPROPERTY()
 	FString Name;
 

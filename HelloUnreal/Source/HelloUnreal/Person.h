@@ -21,10 +21,12 @@ public:
 	//virtual void DoLesson();
 
 	FORCEINLINE const FString& GetName() const { return Name; }
-	FORCEINLINE  void SetName(const FString& InName) { Name = InName; }
+	FORCEINLINE void SetName(const FString& InName) { Name = InName; }
 
 	FORCEINLINE const class UCard* GetCard() const { return Card; }
-	FORCEINLINE  void SetCard(class UCard* InCard) { Card = InCard; }
+	FORCEINLINE void SetCard(class UCard* InCard) { Card = InCard; }
+
+	virtual void Serialize(FArchive& Ar) override;
 
 protected:
 	UPROPERTY()

@@ -9,6 +9,7 @@ UStudent::UStudent()
 	Name = TEXT("김학생");
 	Year = 1;
 	Id = 1;
+	Order = -1;
 	Card->SetCardType(ECardType::Student);
 }
 
@@ -22,4 +23,11 @@ void UStudent::DoLesson()
 void UStudent::GetNotification(const FString& School, const FString& NewCourseInfo)
 {
 	UE_LOG(LogTemp, Log, TEXT("[Student] %s 님이 %s 로부터 받은 메시지 : %s"), *Name, *School, *NewCourseInfo);
+}
+
+void UStudent::Serialize(FArchive& Ar)
+{
+	Super::Serialize(Ar);
+
+	Ar << Order;
 }

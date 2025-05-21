@@ -48,8 +48,13 @@ private:
 	TArray<TObjectPtr<class UStudent>> NonPropStudents;
 
 	class FStudentManager* StudentManager = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<class UStudent> StudentSrc;
 };
 
 void CheckUObjectIsVaild(const UObject* InObject, const FString& InTag);
 
 void CheckUObjectIsNull(const UObject* InObject, const FString& InTag);
+
+void PrintStudentInfo(const class UStudent* InStudent, const FString& InTag);
