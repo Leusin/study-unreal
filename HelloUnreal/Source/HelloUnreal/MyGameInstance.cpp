@@ -9,18 +9,33 @@
 #include "StudentManager.h"
 #include "Serialization/ObjectAndNameAsStringProxyArchive.h"
 #include "JsonObjectConverter.h"
+#include "UOBject/SavePackage.h"
 
+// /Game 디렉터리는 게임에 사용되는 에셋을 모아두는 대표 폴더
+const FString UMyGameInstance::PackageName = TEXT("/Game/Student");
+const FString UMyGameInstance::AssetName = TEXT("TopStudent");
 
 UMyGameInstance::UMyGameInstance()
 {
 	// 언리얼 오브젝트의 초기화. 
 	// 이 정보는 CDO 라는 템플릿에 저장이 된다.
 	SchoolName = TEXT("핵교");
+
+	// 생성자에서 에셋 로딩하기
+	const FString TopSoftObjectPath = FString::Printf(TEXT("%s.%s"), *PackageName, *AssetName);
+	static ConstructorHelpers::FObjectFinder<UStudent> UASSET_TOPStudent(*TopSoftObjectPath);
+	if (UASSET_TOPStudent.Succeeded())
+	{
+		PrintStudentInfo(UASSET_TOPStudent.Object, TEXT("Constructor"));
+	}
 }
 
 void UMyGameInstance::Init()
 {
 	Super::Init();
+
+	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
+
 
 	/*
 	* Hello Unreal
@@ -628,6 +643,41 @@ void UMyGameInstance::Init()
 	출력:
 		LogTemp: [JsonData] 이름: 화렬직, 순번: 31
 	*/
+
+
+	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("============================================="));
+
+
+	/**
+	 * 언리얼 패키지
+	 */
+
+	SaveStudentPackage();
+	//LoadStudentPackage(); // 직접 패키지를 불러와 할당
+
+	// 에셋 로딩 전략
+	// 1. 생성자에서 미리 로딩 (생성자 확인)
+	// 2. 오브젝트 경로를 통해 패키지 내 필요한 에셋 로딩 
+	//LoadStudentObject(); 
+	// 3. 비동기적으로 에셋 로딩(Streamable Manager)
+	const FString TopSoftObjectPath = FString::Printf(TEXT("%s.%s"), *PackageName, *AssetName);
+	Handle = StreamableManager.RequestAsyncLoad(TopSoftObjectPath,
+		[&]()
+		{
+			if (Handle.IsValid() && Handle->HasLoadCompleted())
+			{
+				UStudent* TopStudent = Cast<UStudent>(Handle->GetLoadedAsset());
+				if (TopStudent)
+				{
+					PrintStudentInfo(TopStudent, TEXT("AsyncLoad"));
+
+					Handle->ReleaseHandle();
+					Handle.Reset();
+				}
+			}
+		}
+	);
+
 }
 
 void UMyGameInstance::Shutdown()
@@ -716,4 +766,73 @@ void CheckUObjectIsNull(const UObject* InObject, const FString& InTag)
 void PrintStudentInfo(const UStudent* InStudent, const FString& InTag)
 {
 	UE_LOG(LogTemp, Log, TEXT("[%s] 이름: %s, 순번: %d"), *InTag, *InStudent->GetName(), InStudent->GetOrder());
+}
+
+void UMyGameInstance::SaveStudentPackage() const
+{
+	UPackage* StudentPackage = ::LoadPackage(nullptr, *PackageName, LOAD_None);
+	if (StudentPackage)
+	{
+		StudentPackage->FullyLoad();
+	}
+
+	StudentPackage = CreatePackage(*PackageName); // 패키지 생성
+	EObjectFlags ObjectFlag = RF_Public | RF_Standalone;
+
+	// 안전하게 생성한 오브젝트를 패키기에 넣기
+	// UObject 를 생성할 때 첫 번째 인자로 패키지를 전달하면, 그 패키지 안에 오브젝트를 넣는다는 뜻
+	UStudent* TopStudent = NewObject<UStudent>(StudentPackage, UStudent::StaticClass(), *AssetName, ObjectFlag);
+	TopStudent->SetName(TEXT("패키지"));
+	TopStudent->SetOrder(872);
+
+	// 서브 오브젝트 생성
+	const int32 NumofSubs = 10;
+	for (int32 i = 1; i <= NumofSubs; i++)
+	{
+		FString SubObjectName = FString::Printf(TEXT("Student %d"), i);
+		UStudent* SubStudent = NewObject<UStudent>(TopStudent, UStudent::StaticClass(), *SubObjectName, ObjectFlag);
+		SubStudent->SetName(FString::Printf(TEXT("학생%d"), i));
+		SubStudent->SetOrder(i);
+	}
+
+	// 패키지 저장 경로와 확장자 지정
+	const FString PackageFileName = FPackageName::LongPackageNameToFilename(PackageName, FPackageName::GetAssetPackageExtension());
+	
+	// 패키지 저장
+	FSavePackageArgs SaveArgs;
+	SaveArgs.TopLevelFlags = ObjectFlag;
+
+	if (UPackage::SavePackage(StudentPackage, nullptr, *PackageFileName, SaveArgs))
+	{
+		UE_LOG(LogTemp, Log, TEXT("패키지가 성공적으로 저장되었습니다."));
+	}
+}
+
+void UMyGameInstance::LoadStudentPackage() const
+{
+	UPackage* StudentPackage = ::LoadPackage(nullptr, *PackageName, LOAD_None);
+	if (nullptr == StudentPackage)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("패키지를 찾을 수 없습니다."));
+		return;
+	}
+
+	StudentPackage->FullyLoad();
+	UStudent* TopStudent = FindObject<UStudent>(StudentPackage, *AssetName);
+	PrintStudentInfo(TopStudent, TEXT("FindObject Asset"));
+}
+
+void UMyGameInstance::LoadStudentObject() const
+{
+	const FString TopSoftObjectPath = FString::Printf(TEXT("%s.%s"), *PackageName, *AssetName);
+
+	UStudent* TopStudent = LoadObject<UStudent>(nullptr, *TopSoftObjectPath);
+	
+	if (TopStudent == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("오브젝트를 찾을 수 없습니다."));
+		return;
+	}
+
+	PrintStudentInfo(TopStudent, TEXT("LoadObject Asset"));
 }

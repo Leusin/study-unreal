@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
+#include "Engine/StreamableManager.h"
 #include "StudentData.h"
 #include "MyGameInstance.generated.h"
 
@@ -23,7 +24,14 @@ public:
 
 	virtual void Shutdown() override;
 	
+	void SaveStudentPackage() const;
+	void LoadStudentPackage() const;
+	void LoadStudentObject() const;
+
 private:
+	static const FString PackageName;
+	static const FString AssetName;
+
 	UPROPERTY()
 	TObjectPtr<class UCourseInfo> CourseInfo;
 
@@ -51,6 +59,9 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<class UStudent> StudentSrc;
+
+	FStreamableManager StreamableManager;
+	TSharedPtr<FStreamableHandle> Handle;
 };
 
 void CheckUObjectIsVaild(const UObject* InObject, const FString& InTag);
