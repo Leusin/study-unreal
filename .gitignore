@@ -39,3 +39,5 @@
 # Exclude only specific necessary files from Build
 !**/Build/**/PakBlacklist*.txt
 !**/Build/**/*.ico
+
+**/Package
