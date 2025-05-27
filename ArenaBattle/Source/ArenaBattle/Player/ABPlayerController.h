@@ -16,6 +16,6 @@ class ARENABATTLE_API AABPlayerController : public APlayerController
 	
 	
 protected:
-	virtual void BeginPlayer() override;
+	virtual void BeginPlay() override;
 	
 };
