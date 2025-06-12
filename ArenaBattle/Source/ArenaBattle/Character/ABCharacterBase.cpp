@@ -12,7 +12,9 @@
 #include "CharacterStat/ABCharacterStatComponent.h"
 #include "UI/ABWidgetComponent.h"
 #include "UI/ABHpBarWidget.h"
+#include "Item/ABWeaponItemData.h"
 
+DEFINE_LOG_CATEGORY(LogABCharacter)
 
 // Sets default values
 AABCharacterBase::AABCharacterBase()
@@ -107,6 +109,17 @@ AABCharacterBase::AABCharacterBase()
 		HpBar->SetDrawSize(FVector2D(150.0f, 15.0f));
 		HpBar->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
+
+	// Item Actions
+	TakeItemActions.Add(FTakeItemDelegateWrapper(FOnTakeItemDelegate::CreateUObject(this, &AABCharacterBase::EquipWeapon)));
+	TakeItemActions.Add(FTakeItemDelegateWrapper(FOnTakeItemDelegate::CreateUObject(this, &AABCharacterBase::DrinkPotion)));
+	TakeItemActions.Add(FTakeItemDelegateWrapper(FOnTakeItemDelegate::CreateUObject(this, &AABCharacterBase::ReadScroll)));
+
+	// Weapon Component
+	//Weapon = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Weapon"));
+	Weapon = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Weapon"));
+	Weapon->SetupAttachment(GetMesh(), TEXT("weapon_l"));
+	Weapon->SetRelativeRotation(FRotator(0.f, 0.f, 90.f));
 }
 
 void AABCharacterBase::PostInitializeComponents()
@@ -266,26 +279,37 @@ void AABCharacterBase::SetupCharacterWidget(UABUserWidget* InUserWidget)
 	}
 }
 
-/*
-// Called when the game starts or when spawned
-void AABCharacterBase::BeginPlay()
+void AABCharacterBase::TakeItem(UABItemData* InItemData)
 {
-	Super::BeginPlay();
-
+	if (InItemData)
+	{
+		TakeItemActions[(uint8)InItemData->Type].ItemDelegate.ExecuteIfBound(InItemData);
+	}
 }
 
-// Called every frame
-void AABCharacterBase::Tick(float DeltaTime)
+void AABCharacterBase::DrinkPotion(UABItemData* InItemData)
 {
-	Super::Tick(DeltaTime);
-
+	UE_LOG(LogABCharacter, Log, TEXT("포션 마시기 DrinkPotion"));
 }
 
-// Called to bind functionality to input
-void AABCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void AABCharacterBase::EquipWeapon(UABItemData* InItemData)
 {
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	UE_LOG(LogABCharacter, Log, TEXT("무기 장비 EquipWeapon"));
 
+	UABWeaponitemData* WeaponItemData = Cast<UABWeaponitemData>(InItemData);
+	if(WeaponItemData)
+	{
+		if (WeaponItemData->WeaponMesh.IsPending())
+		{
+			WeaponItemData->WeaponMesh.LoadSynchronous();
+		}
+		//Weapon->SetSkeletalMesh(WeaponItemData->WeaponMesh.Get());
+		Weapon->SetStaticMesh(WeaponItemData->WeaponMesh.Get());
+	}
 }
-*/
+
+void AABCharacterBase::ReadScroll(UABItemData* InItemData)
+{
+	UE_LOG(LogABCharacter, Log, TEXT("스크롤 읽기 ReadScroll"));
+}
 
