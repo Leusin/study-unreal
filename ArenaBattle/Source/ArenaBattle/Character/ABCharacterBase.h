@@ -43,6 +43,10 @@ public:
 
 	virtual void PostInitializeComponents() override;
 
+	// Stat Section
+	int32 GetLevel();
+	void SetLevel(int32 InNewLevel);
+
 protected:
 	// Called when the game starts or when spawned
 	//virtual void BeginPlay() override;
@@ -89,7 +93,7 @@ protected:
 	virtual void SetDead();
 	void PlayDeadAnimation();
 
-	float DeadEventDelayTime = 5.0f;
+	float DeadEventDelayTime = 1.0f;
 
 // Stat Section
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Stat, Meta = (AllowPrivateAccess = "true"))

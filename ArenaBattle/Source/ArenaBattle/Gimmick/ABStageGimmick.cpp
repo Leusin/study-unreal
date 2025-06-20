@@ -61,7 +61,7 @@ AABStageGimmick::AABStageGimmick()
 	StateChangeActions.Add(EStageState::NEXT, FStageChangedDelegateWrapper(FOnStageChangedDelegate::CreateUObject(this, &AABStageGimmick::SetChooseNext)));
 
 	// Fight Section
-	OpponentSpawnTime = 2.0f;
+	OpponentSpawnTime = 0.5f;
 	OpponentClass = AABCharacterNonPlayer::StaticClass();
 
 	// Reward Section
@@ -71,6 +71,9 @@ AABStageGimmick::AABStageGimmick()
 		FVector BoxLocation = Stage->GetSocketLocation(GateSocket) / 2;
 		RewardBoxLocations.Add(GateSocket, BoxLocation);
 	}
+
+	// Stage Stat
+	CurrentStageNum = 0;
 }
 
 void AABStageGimmick::OnConstruction(const FTransform& Transform)
@@ -106,7 +109,15 @@ void AABStageGimmick::OnGateTriggerBeginOverlap(UPrimitiveComponent* OverlappedC
 
 	if (!bResult)
 	{
-		GetWorld()->SpawnActor<AABStageGimmick>(NewLocation, FRotator::ZeroRotator);
+		//AABStageGimmick* NewGimmick = GetWorld()->SpawnActor<AABStageGimmick>(NewLocation, FRotator::ZeroRotator);
+
+		FTransform NewTransform(NewLocation);
+		AABStageGimmick* NewGimmick = GetWorld()->SpawnActorDeferred<AABStageGimmick>(AABStageGimmick::StaticClass(), NewTransform);
+		if (NewGimmick)
+		{
+			NewGimmick->SetStageNum(CurrentStageNum + 1);
+			NewGimmick->FinishSpawning(NewTransform);
+		}
 	}
 }
 
@@ -190,12 +201,19 @@ void AABStageGimmick::OnOpponentDestroyed(AActor* DestroyedActor)
 
 void AABStageGimmick::OnOpponentSpawn()
 {
-	const FVector SpawnLocation = GetActorLocation() + FVector::UpVector * 88.0f;
-	AActor* OpponentActor = GetWorld()->SpawnActor(OpponentClass, &SpawnLocation, &FRotator::ZeroRotator);
-	AABCharacterNonPlayer* ABOpponentCharacter = Cast<AABCharacterNonPlayer>(OpponentActor);
+	// const FVector SpawnLocation = GetActorLocation() + FVector::UpVector * 88.0f;
+	const FTransform SpawnTransform(GetActorLocation() + FVector::UpVector * 88.0f);
+
+	//AActor* OpponentActor = GetWorld()->SpawnActor(OpponentClass, &SpawnLocation, &FRotator::ZeroRotator);
+	//AABCharacterNonPlayer* ABOpponentCharacter = Cast<AABCharacterNonPlayer>(OpponentActor);
+
+	// SpawnActorDeferred 로 생성한 객체는 FinishSpawning 를 호출해야만 BeginPlay 가 호출된다.
+	AABCharacterNonPlayer* ABOpponentCharacter = GetWorld()->SpawnActorDeferred<AABCharacterNonPlayer>(OpponentClass, SpawnTransform);
 	if (ABOpponentCharacter)
 	{
 		ABOpponentCharacter->OnDestroyed.AddDynamic(this, &AABStageGimmick::OnOpponentDestroyed);
+		ABOpponentCharacter->SetLevel(CurrentStageNum);
+		ABOpponentCharacter->FinishSpawning(SpawnTransform);
 	}
 }
 
@@ -221,14 +239,27 @@ void AABStageGimmick::SpawnRewardBoxes()
 {
 	for (const auto& RewardBoxLocation : RewardBoxLocations)
 	{
-		FVector WorldSpawnLocation = GetActorLocation() + RewardBoxLocation.Value + FVector(0.0f, 0.0f, 30.0f);
-		AActor* ItemActor = GetWorld()->SpawnActor(RewardBoxClass, &WorldSpawnLocation, &FRotator::ZeroRotator);
-		AABItemBox* RewardBoxActor = Cast<AABItemBox>(ItemActor);
+		
+		//FVector WorldSpawnLocation = GetActorLocation() + RewardBoxLocation.Value + FVector(0.0f, 0.0f, 30.0f);
+		// AActor* ItemActor = GetWorld()->SpawnActor(RewardBoxClass, &WorldSpawnLocation, &FRotator::ZeroRotator);
+		// AABItemBox* RewardBoxActor = Cast<AABItemBox>(ItemActor);
+
+		FTransform WorldSpawnTransform(GetActorLocation() + RewardBoxLocation.Value + FVector(0.0f, 0.0f, 30.0f));
+		AABItemBox* RewardBoxActor = GetWorld()->SpawnActorDeferred<AABItemBox>(RewardBoxClass, WorldSpawnTransform);
+
 		if (RewardBoxActor)
 		{
 			RewardBoxActor->Tags.Add(RewardBoxLocation.Key);
 			RewardBoxActor->GetTrigger()->OnComponentBeginOverlap.AddDynamic(this, &AABStageGimmick::OnRewardTriggerBeginOverlap);
 			RewardBoxes.Add(RewardBoxActor);
+		}
+	}
+
+	for (const auto& RewardBox : RewardBoxes)
+	{
+		if (RewardBox.IsValid()) // RewardBoxes 가 약참조이기 때문에 유효성 확인
+		{
+			RewardBox.Get()->FinishSpawning(RewardBox.Get()->GetActorTransform());
 		}
 	}
 }
