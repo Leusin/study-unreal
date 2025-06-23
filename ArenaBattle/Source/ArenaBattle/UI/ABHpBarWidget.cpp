@@ -4,6 +4,7 @@
 #include "UI/ABHpBarWidget.h"
 #include "Components/ProgressBar.h"
 #include "Interface/ABCharacterWidgetInterface.h"
+#include "ABHUDWidget.h"
 
 
 UABHpBarWidget::UABHpBarWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
