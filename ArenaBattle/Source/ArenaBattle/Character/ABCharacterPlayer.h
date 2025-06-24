@@ -23,6 +23,8 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	virtual void SetDead() override;
+
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 // Character Control Section

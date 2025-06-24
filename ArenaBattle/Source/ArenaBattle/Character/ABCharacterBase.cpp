@@ -12,7 +12,7 @@
 #include "CharacterStat/ABCharacterStatComponent.h"
 #include "UI/ABWidgetComponent.h"
 #include "UI/ABHpBarWidget.h"
-#include "Item/ABWeaponItemData.h"
+#include "Item/ABItems.h"
 
 DEFINE_LOG_CATEGORY(LogABCharacter)
 
@@ -127,6 +127,7 @@ void AABCharacterBase::PostInitializeComponents()
 	Super::PostInitializeComponents();
 
 	Stat->OnHpZero.AddUObject(this, &AABCharacterBase::SetDead);
+	Stat->OnStatChanged.AddUObject(this, &AABCharacterBase::ApplyStat);
 }
 
 int32 AABCharacterBase::GetLevel()
@@ -137,6 +138,12 @@ int32 AABCharacterBase::GetLevel()
 void AABCharacterBase::SetLevel(int32 InNewLevel)
 {
 	Stat->SetLevelStat(InNewLevel);
+}
+
+void AABCharacterBase::ApplyStat(const FABCharacterStat& BaseStat, const FABCharacterStat& ModifierStat)
+{
+	float MovementSpeed = (BaseStat + ModifierStat).MovementSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = MovementSpeed;
 }
 
 void AABCharacterBase::SetCharacterControlData(const UABCharacterControlData* CharacterControlData)
@@ -289,9 +296,10 @@ void AABCharacterBase::SetupCharacterWidget(UABUserWidget* InUserWidget)
 	UABHpBarWidget* HpBarWidget = Cast<UABHpBarWidget>(InUserWidget);
 	if (HpBarWidget)
 	{
-		HpBarWidget->SetMaxHp(Stat->GetTotalStat().MaxHp);
+		HpBarWidget->UpdateStat(Stat->GetBaseStat(), Stat->GetModifierStat());
 		HpBarWidget->UpdateHpBar(Stat->GetCurrentHp());
 		Stat->OnHpChanged.AddUObject(HpBarWidget, &UABHpBarWidget::UpdateHpBar);
+		Stat->OnStatChanged.AddUObject(HpBarWidget, &UABHpBarWidget::UpdateStat);
 	}
 }
 
@@ -305,14 +313,18 @@ void AABCharacterBase::TakeItem(UABItemData* InItemData)
 
 void AABCharacterBase::DrinkPotion(UABItemData* InItemData)
 {
-	UE_LOG(LogABCharacter, Log, TEXT("포션 마시기 DrinkPotion"));
+	//UE_LOG(LogABCharacter, Log, TEXT("포션 마시기 DrinkPotion"));
+	UABPotionItemData* PotionItemData = Cast<UABPotionItemData>(InItemData);
+	if (PotionItemData)
+	{
+		Stat->HealHp(PotionItemData->HealAmount);
+	}
 }
 
 void AABCharacterBase::EquipWeapon(UABItemData* InItemData)
 {
-	UE_LOG(LogABCharacter, Log, TEXT("무기 장비 EquipWeapon"));
-
-	UABWeaponitemData* WeaponItemData = Cast<UABWeaponitemData>(InItemData);
+	//UE_LOG(LogABCharacter, Log, TEXT("무기 장비 EquipWeapon"));
+	UABStaffItemData* WeaponItemData = Cast<UABStaffItemData>(InItemData);
 	if(WeaponItemData)
 	{
 		if (WeaponItemData->WeaponMesh.IsPending())
@@ -327,6 +339,11 @@ void AABCharacterBase::EquipWeapon(UABItemData* InItemData)
 
 void AABCharacterBase::ReadScroll(UABItemData* InItemData)
 {
-	UE_LOG(LogABCharacter, Log, TEXT("스크롤 읽기 ReadScroll"));
+	//UE_LOG(LogABCharacter, Log, TEXT("스크롤 읽기 ReadScroll"));
+	UABScrollItemData* ScrollItemData = Cast<UABScrollItemData>(InItemData);
+	if (ScrollItemData)
+	{
+		Stat->AddBaseStat(ScrollItemData->BaseStat);
+	}
 }
 

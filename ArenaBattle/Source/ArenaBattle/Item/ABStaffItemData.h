@@ -5,13 +5,13 @@
 #include "CoreMinimal.h"
 #include "Item/ABItemData.h"
 #include "GameData/ABCharacterStat.h"
-#include "ABWeaponitemData.generated.h"
+#include "ABStaffItemData.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class ARENABATTLE_API UABWeaponitemData : public UABItemData
+class ARENABATTLE_API UABStaffItemData : public UABItemData
 {
 	GENERATED_BODY()
 	

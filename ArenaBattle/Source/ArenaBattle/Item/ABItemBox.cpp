@@ -49,14 +49,7 @@ void AABItemBox::PostInitializeComponents()
 	TArray<FPrimaryAssetId> Assets;
 	Manager.GetPrimaryAssetIdList(TEXT("ABItemData"), Assets);
 	ensure(0 < Assets.Num());
-
-	for (const FPrimaryAssetId& Id : Assets)
-	{
-		if (Id.ToString().Contains(TEXT("ABIW_Weapon1")))
-		{
-			UE_LOG(LogTemp, Display, TEXT("Found asset: %s with type: %s"), *Id.ToString(), *Id.PrimaryAssetType.ToString());
-		}
-	}
+	UE_LOG(LogTemp, Log, TEXT("The number of items value is: %d"), Assets.Num());
 
 	int32 RandomIndex = FMath::RandRange(0, Assets.Num() - 1);
 	FSoftObjectPtr AssetPtr(Manager.GetPrimaryAssetPath(Assets[RandomIndex]));

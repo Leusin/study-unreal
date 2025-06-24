@@ -68,7 +68,24 @@ void AABCharacterPlayer::BeginPlay()
 {
 	Super::BeginPlay();
 
+	APlayerController* PlayerContorller = Cast<APlayerController>(GetController());
+	if (PlayerContorller)
+	{
+		EnableInput(PlayerContorller);
+	}
+
 	SetCharacterControl(CurrentCharacterControlType);
+}
+
+void AABCharacterPlayer::SetDead()
+{
+	Super::SetDead();
+
+	APlayerController* PlayerContorller = Cast<APlayerController>(GetController());
+	if (PlayerContorller)
+	{
+		DisableInput(PlayerContorller);
+	}
 }
 
 void AABCharacterPlayer::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
