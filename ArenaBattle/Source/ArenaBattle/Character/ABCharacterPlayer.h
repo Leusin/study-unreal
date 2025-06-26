@@ -19,7 +19,7 @@ class ARENABATTLE_API AABCharacterPlayer : public AABCharacterBase, public IABCh
 	
 public:
 	AABCharacterPlayer();
-
+	
 protected:
 	virtual void BeginPlay() override;
 
